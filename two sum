@@ -1,0 +1,80 @@
+#include <stdlib.h>
+
+typedef struct {
+    int key;  // the number
+    int val;  // index of the number in the input array
+} HashEntry;
+
+typedef struct {
+    HashEntry* table;
+    int size;
+} HashMap;
+
+// Create hash map with given size, initialize empty slots with sentinel key and val
+HashMap* createHashMap(int size) {
+    HashMap* map = (HashMap*)malloc(sizeof(HashMap));
+    map->size = size;
+    map->table = (HashEntry*)malloc(sizeof(HashEntry) * size);
+    for (int i = 0; i < size; i++) {
+        map->table[i].key = 0x80000000;  // sentinel for empty
+        map->table[i].val = -1;
+    }
+    return map;
+}
+
+// Simple hash function (modulus)
+int hash(HashMap* map, int key) {
+    unsigned int k = (unsigned int)key;
+    return k % map->size;
+}
+
+// Insert key,val into hash map using linear probing
+void hashMapInsert(HashMap* map, int key, int val) {
+    int idx = hash(map, key);
+    while (map->table[idx].val != -1 && map->table[idx].key != key) {
+        idx = (idx + 1) % map->size;
+    }
+    map->table[idx].key = key;
+    map->table[idx].val = val;
+}
+
+// Search key in hash map, return val if found, else -1
+int hashMapGet(HashMap* map, int key) {
+    int idx = hash(map, key);
+    int start = idx;
+    while (map->table[idx].val != -1) {
+        if (map->table[idx].key == key) {
+            return map->table[idx].val;
+        }
+        idx = (idx + 1) % map->size;
+        if (idx == start) break;  // full loop done
+    }
+    return -1;
+}
+
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    *returnSize = 2;
+    int* result = (int*)malloc(2 * sizeof(int));
+    
+    HashMap* map = createHashMap(numsSize * 2);
+
+    for (int i = 0; i < numsSize; i++) {
+        int complement = target - nums[i];
+        int compIndex = hashMapGet(map, complement);
+        if (compIndex != -1) {
+            result[0] = compIndex;
+            result[1] = i;
+            free(map->table);
+            free(map);
+            return result;
+        }
+        hashMapInsert(map, nums[i], i);
+    }
+
+    // No solution found
+    free(result);
+    free(map->table);
+    free(map);
+    *returnSize = 0;
+    return NULL;
+}
